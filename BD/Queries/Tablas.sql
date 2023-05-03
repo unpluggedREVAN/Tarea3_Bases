@@ -7,8 +7,19 @@ CREATE TABLE dbo.TarjetaHabiente
 	--,idTipoDocumentoID INT NOT NULL FOREIGN KEY REFERENCES TipoDocumentoID(id) 
 	--,ValorDocumentoID INT NOT NULL
 );
+SELECT th.Id, th.NombreUsuario, th.Password,th.IdTipoDocumentoID FROM dbo.TarjetaHabiente th;
+SELECT * FROM dbo.TarjetaHabiente;
+SELECT * FROM dbo.Usuario;
+ALTER TABLE dbo.TarjetaHabiente ADD NombreUsuario VARCHAR(1000) NOT NULL;
+
 ALTER TABLE dbo.TarjetaHabiente--ID que referencia al tipo documento
-ADD IdTipoDocumentoID INT NOT NULL;
+ADD Password VARCHAR(250) NOT NULL;
+
+ALTER TABLE dbo.TarjetaHabiente
+ADD CONSTRAINT fk_TarjetaHabiente_Usuario
+FOREIGN KEY (IdUsuario)
+REFERENCES dbo.Usuario (Id);
+
 
 
 
@@ -20,8 +31,11 @@ REFERENCES dbo.TipoDocumentoID (Id);
 --TarjetaHabiente REFERENCE->TipoDocumentoID
 CREATE TABLE dbo.TipoDocumentoID
 (
-	Id INT IDENTITY (1,1) NOT NULL PRIMARY KEY 
+	Id INT IDENTITY (1,1) NOT NULL PRIMARY KEY
 );
+
+ALTER TABLE dbo.TipoDocumentoID ADD Nombre VARCHAR(128) NOT NULL;
+ALTER TABLE dbo.TipoDocumentoID ADD Formato VARCHAR(128) NOT NULL;
 
 CREATE TABLE dbo.CuentaTarjetaAdicional   --CTA
 (
@@ -82,7 +96,8 @@ CREATE TABLE dbo.TipodeCuentaTarjeta--Referenciara a TarjetaFisica
 (--Son del tipo Corporativo, oro platino
 	Id INT IDENTITY(1,1) NOT NULL PRIMARY KEY 
 );
-
+SELECT * FROM dbo.TipodeCuentaTarjeta
+ALTER TABLE dbo.TipodeCuentaTarjeta ADD Nombre VARCHAR(128) NOT NULL
 
 --Maybe map tipocuenta based on the name rule using fk key in TipodeCuenta
 CREATE TABLE dbo.RegladeNegocio--RN
@@ -92,6 +107,9 @@ CREATE TABLE dbo.RegladeNegocio--RN
 	,IdTipoRegla INT NOT NULL
 );
 
+SELECT * FROM dbo.RegladeNegocio;
+
+--ALTER TABLE dbo.RegladeNegocio ADD Valor VARCHAR(50) NOT NULL--Valor puede ser INT Real 
 
 ALTER TABLE dbo.RegladeNegocio
 ADD CONSTRAINT fk_RegladeNegocio_TipoRegladeNegocio
@@ -106,6 +124,8 @@ CREATE TABLE dbo.TipoRegladeNegocio--TRN
 	,Nombre VARCHAR(128) NOT NULL
 );
 
+SELECT * FROM dbo.TipoRegladeNegocio
+ALTER TABLE dbo.TIpoRegladeNegocio ADD Tipo VARCHAR(128) NOT NULL
 
 CREATE TABLE dbo.TipodeCuentaTarjetaxRegladeNegocio
 (
@@ -172,6 +192,7 @@ CREATE TABLE dbo.EstadodeCuenta
 	,Fecha DATETIME NOT NULL
 	,Saldo MONEY NOT NULL
 	--idSubEstadodeCuenta MONEY NOT NULL FOREIGN KEY REFERENCES SubEstadodeCuenta(id)
+	--ADD, InteresAcumulado MONEY NOT NULL
 );
 
 ALTER TABLE dbo.EstadodeCuenta ADD IdCuentaTarjetaMaestra INT NOT NULL;
@@ -186,6 +207,7 @@ CREATE TABLE dbo.SubEstadodeCuenta
 	Id INT IDENTITY(1,1) NOT NULL PRIMARY KEY 
 	,IdEstadodeCuenta INT NOT NULL
 	,IdCuentaTarjetaAdicional INT NOT NULL
+	--ADD, Fecha DATETIME NOT NULL
 );
 
 ALTER TABLE dbo.SubEstadodeCuenta
@@ -202,6 +224,8 @@ CREATE TABLE dbo.Movimiento
 	,Fecha DATETIME NOT NULL
 	,Referencia INT NOT NULL--INT OR VARCHAR
 	,IdTipoMovimiento INT NOT NULL
+	--ADD?,AcumulaOpeVentana BIT NOT NULL
+	--ADD?,AcumulaOpeATM BIT NOT NULL
 );
 
 ALTER TABLE dbo.Movimiento ADD IdTarjetaFisica INT NOT NULL;
@@ -249,11 +273,21 @@ CREATE TABLE dbo.TarjetaFisica
 	,IdCuentaTarjeta INT NOT NULL
 );
 
+ALTER TABLE dbo.TarjetaFisica ADD IdMotivoInvalidacion INT NOT NULL
 
 ALTER TABLE dbo.TarjetaFisica
 ADD CONSTRAINT fk_TarjetaFisica_MotivoInvalidacion
 FOREIGN KEY (IdMotivoInvalidacion)
 REFERENCES dbo.MotivoInvalidacion (Id);
+
+--Borrar un foreign key con su constraint 
+ALTER TABLE dbo.TarjetaFisica
+DROP CONSTRAINT fk_TarjetaFisica_MotivoInvalidacion;
+
+ALTER TABLE dbo.TarjetaFisica
+DROP COLUMN IdMotivoInvalidacion;
+
+SELECT * FROM dbo.TarjetaFisica
 
 
 ALTER TABLE dbo.TarjetaFisica
@@ -264,44 +298,44 @@ REFERENCES dbo.CuentaTarjeta (Id);
 
 CREATE TABLE dbo.MotivoInvalidacion
 (
-	Id INT NOT NULL PRIMARY KEY
+	Id INT IDENTITY(1,1) NOT NULL PRIMARY KEY
 	,Descripcion VARCHAR(1000) NOT NULL
 );
 
 
+
 CREATE TABLE dbo.MovimientoInteresCorriente
 (
-	Id INT NOT NULL PRIMARY KEY
+	Id INT IDENTITY(1,1)  NOT NULL PRIMARY KEY
 	,Fecha DATETIME NOT NULL
 	,Monto MONEY NOT NULL
 	,NuevoInteresAcumuladoCorriente MONEY NOT NULL
 );
 
 
-
-ALTER TABLE dbo.MovimientoInteresCorriente ADD IdCuentaTarjetaMaestra INT NOT NULL;
+ALTER TABLE dbo.MovimientoInteresCorriente ADD IdTipoMovimiento INT NOT NULL;
 
 ALTER TABLE dbo.MovimientoInteresCorriente
-ADD CONSTRAINT fk_MovimientoInteresCorriente_CuentaTarjetaMaestra
-FOREIGN KEY (IdCuentaTarjetaMaestra)
-REFERENCES dbo.CuentaTarjetaMaestra (Id);
+ADD CONSTRAINT fk_MovimientoInteresCorriente_TipoMovInteresCorriente
+FOREIGN KEY (IdTipoMovimiento)
+REFERENCES dbo.TipoMovInteresCorriente (Id);
 
 CREATE TABLE dbo.TipoMovInteresCorriente
 (
-	Id INT NOT NULL PRIMARY KEY
+	Id INT IDENTITY(1,1)  NOT NULL PRIMARY KEY
 	,Nombre VARCHAR(32) NOT NULL
 	--1:credito,2:debito
 );
 
 
-
 CREATE TABLE dbo.MovimientoInteresMoratorio
 (
-	Id INT NOT NULL PRIMARY KEY
+	Id INT IDENTITY(1,1) NOT NULL PRIMARY KEY
 	,Fecha DATETIME NOT NULL
 	,Monto MONEY NOT NULL
 	,NuevoInteresAcumuladoMoratorio MONEY NOT NULL
 );
+
 
 ALTER TABLE dbo.MovimientoInteresMoratorio ADD IdCuentaTarjetaMaestra INT NOT NULL;
 
@@ -309,7 +343,6 @@ ALTER TABLE dbo.MovimientoInteresMoratorio
 ADD CONSTRAINT fk_MovimientoInteresMoratorio_CuentaTarjetaMaestra
 FOREIGN KEY (IdCuentaTarjetaMaestra)
 REFERENCES dbo.CuentaTarjetaMaestra (Id);
-
 
 ALTER TABLE dbo.MovimientoInteresMoratorio ADD IdTipoMovimiento INT NOT NULL;
 
@@ -320,7 +353,48 @@ REFERENCES dbo.TipoMovInteresMoratorio (Id);
 
 CREATE TABLE dbo.TipoMovInteresMoratorio
 (
-	Id INT NOT NULL PRIMARY KEY 
+	Id INT IDENTITY(1,1)  NOT NULL PRIMARY KEY 
 	,Nombre VARCHAR(32) NOT NULL 
 	--1:credito,2:debito
 );
+
+
+CREATE TABLE dbo.EventLog
+(
+	Id INT NOT NULL PRIMARY KEY
+	,IdTypeEventLog INT NOT NULL 
+	,NombreUsuario VARCHAR(250) NOT NULL
+	,Descripcion VARCHAR(1000) NOT NULL
+);
+
+CREATE TABLE dbo.TypeEventLog
+(
+	Id INT NOT NULL PRIMARY KEY
+	,Nombre VARCHAR(1000) NOT NULL
+);
+
+
+--TIpos de usuario: Administrador y TarjetaHabiente. Cada uno es una entidad diferente???
+CREATE TABLE dbo.Usuario
+(
+	Id INT IDENTITY(1,1) NOT NULL PRIMARY KEY
+	,NombreUsuario VARCHAR(250) NOT NULL
+	,Password VARCHAR(128) NOT NULL
+	,EsAdmin BIT NOT NULL
+);
+
+
+--Tabla de errores usada en el curso 
+CREATE TABLE [dbo].[DBErrors](
+	[ErrorID] [int] IDENTITY(1,1) NOT NULL,
+	[UserName] [varchar](100) NULL,
+	[ErrorNumber] [int] NULL,
+	[ErrorState] [int] NULL,
+	[ErrorSeverity] [int] NULL,
+	[ErrorLine] [int] NULL,
+	[ErrorProcedure] [varchar](max) NULL,
+	[ErrorMessage] [varchar](max) NULL,
+	[ErrorDateTime] [datetime] NULL
+)
+
+
